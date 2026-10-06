@@ -1,0 +1,17 @@
+name: Server checks
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: Domain to check
+        required: true
+        type: string
+
+jobs:
+  server-checks:
+    uses: ./.github/workflows/server-checks.yml
+    with:
+      # Replace with your domain.
+      domain: example.com
+      alert-days: 10

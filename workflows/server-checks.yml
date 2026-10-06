@@ -1,0 +1,64 @@
+name: Reusable CI Server Checks
+
+on:
+  workflow_call:
+    inputs:
+      domain:
+        description: Domain to check
+        required: true
+        type: string
+      alert-days:
+        description: Fail if SSL expires within this many days
+        required: false
+        default: 10
+        type: number
+
+jobs:
+  dns-and-ssl:
+    name: DNS and SSL checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Validate inputs and required A1 scripts
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          ALERT_DAYS: ${{ inputs.alert-days }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "::error::Invalid domain format."
+            exit 2
+          fi
+          if [[ ! "$ALERT_DAYS" =~ ^[0-9]+$ ]]; then
+            echo "::error::alert-days must be a non-negative integer."
+            exit 2
+          fi
+          for script in scripts/check_dns.sh scripts/check_ssl.sh; do
+            if [[ ! -f "$script" ]]; then
+              echo "::error file=$script::Required A1 script missing. Build ASSET A1 first."
+              exit 2
+            fi
+            chmod +x "$script"
+          done
+
+      - name: Run A1 DNS check
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          CI: "true"
+        run: |
+          set -euo pipefail
+          ./scripts/check_dns.sh "$DOMAIN"
+
+      - name: Run A1 SSL expiry check
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          ALERT_DAYS: ${{ inputs.alert-days }}
+          CI: "true"
+        run: |
+          set -euo pipefail
+          ./scripts/check_ssl.sh "$DOMAIN"
