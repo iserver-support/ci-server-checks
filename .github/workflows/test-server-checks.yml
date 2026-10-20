@@ -1,0 +1,12 @@
+
+name: Test reusable server checks
+
+on:
+  workflow_dispatch:
+
+jobs:
+  server-checks:
+    uses: ./.github/workflows/server-checks.yml
+    with:
+      domain: iserversupport.com
+      alert-days: 10
