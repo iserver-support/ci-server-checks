@@ -1,0 +1,65 @@
+name: Reusable CI Server Checks
+
+on:
+  workflow_call:
+    inputs:
+      domain:
+        description: Domain to check
+        required: true
+        type: string
+      alert-days:
+        description: Minimum remaining SSL certificate validity in days
+        required: false
+        default: 10
+        type: number
+
+jobs:
+  dns-and-ssl:
+    name: DNS and SSL checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate inputs
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          ALERT_DAYS: ${{ inputs.alert-days }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "::error::Invalid domain format."
+            exit 2
+          fi
+          if [[ ! "$ALERT_DAYS" =~ ^[0-9]+$ ]] || (( ALERT_DAYS > 36500 )); then
+            echo "::error::alert-days must be an integer between 0 and 36500."
+            exit 2
+          fi
+
+      - name: Install DNS utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dnsutils
+
+      - name: Check out A1 serverchecks
+        uses: actions/checkout@v4
+        with:
+          repository: iserver-support/serverchecks
+          ref: main
+          path: a1-serverchecks
+
+      - name: Run A1 DNS audit
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          CI_STRICT: "true"
+        run: |
+          set -euo pipefail
+          ./a1-serverchecks/bin/dns-audit "$DOMAIN"
+
+      - name: Run A1 SSL expiry check
+        shell: bash
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          ALERT_DAYS: ${{ inputs.alert-days }}
+        run: |
+          set -euo pipefail
+          ./a1-serverchecks/bin/ssl-expiry "$DOMAIN"

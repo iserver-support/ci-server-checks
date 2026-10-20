@@ -3,11 +3,11 @@
 ASSET A6 calls the ASSET A1 scripts; it does not duplicate DNS or SSL logic.
 
 Required files:
-- `scripts/check_dns.sh`
-- `scripts/check_ssl.sh`
+- `bin/dns-audit`
+- `bin/ssl-expiry`
 
 Each script must:
-1. Accept the domain through `DOMAIN` or `$1`.
+1. Accept the domain as the first positional argument (`$1`); A6 passes the domain this way.
 2. Exit `0` only when the check passes.
 3. Exit non-zero on DNS failure, certificate retrieval/parse failure, or expiry at/below `ALERT_DAYS`.
 4. Print concise diagnostics and avoid interactive prompts.

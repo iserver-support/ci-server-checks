@@ -4,15 +4,11 @@ Reusable GitHub Actions workflow for running ASSET A1 DNS and SSL scripts agains
 
 ## Required A1 scripts
 
-Add these tested scripts to the caller repository:
-- `scripts/check_dns.sh`
-- `scripts/check_ssl.sh`
-
-Both must accept the domain as `$1` or through `DOMAIN`, print useful diagnostics, and return exit code `0` only on success. The SSL script should read `ALERT_DAYS` (default 10) and return non-zero if the certificate cannot be checked or expires within that threshold. If A1 currently only prints warnings, update its exit status for CI use.
+The reusable workflow checks out the A1 repository (`iserver-support/serverchecks`) and runs `bin/dns-audit` and `bin/ssl-expiry`. DNS checks run with `CI_STRICT=true`. The SSL expiry threshold is configurable through `alert-days` (default 10 days).
 
 ## Same-repository use
 
-Copy `workflows/server-checks.yml` to `.github/workflows/server-checks.yml`, then call it from a workflow:
+For use in the same repository, call the workflow from a workflow file:
 
 ```yaml
 jobs:
@@ -30,13 +26,13 @@ After publishing this component, call it with:
 ```yaml
 jobs:
   server-checks:
-    uses: iserversupport/ci-server-checks/.github/workflows/server-checks.yml@main
+    uses: iserver-support/ci-server-checks/.github/workflows/server-checks.yml@main
     with:
       domain: example.com
       alert-days: 10
 ```
 
-Replace `iserversupport` with your actual GitHub owner. The reusable workflow checks out the caller repository, so the A1 scripts must be present in the caller repository. Alternatively, vendor the approved A1 scripts into the component repository or add a version-pinned checkout of A1 after confirming its real repository and file paths.
+The workflow checks out A1 from its `main` branch. For reproducible production use, consider pinning the A1 checkout to an approved commit or release.
 
 ## DNS policy
 
